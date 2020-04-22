@@ -1,43 +1,66 @@
-package ua.lviv.iot.secondlab.managers;
+package ua.lviv.iot.spring.first.rest.controllers;
 
 import java.util.*;
+import java.util.concurrent.atomic.AtomicInteger;
 
-import ua.lviv.iot.secondlab.models.Accessory;
+import org.springframework.http.HttpStatus;
+import org.springframework.http.ResponseEntity;
+import org.springframework.web.bind.annotation.*;
 
+import ua.lviv.iot.spring.first.rest.models.Accessory;
+
+@RequestMapping("/products")
+@RestController
 public class ProductManager {
-	public List<Accessory> accessories = new ArrayList<>();
+	public Map<Integer, Accessory> accessories = new HashMap<>();
+	private AtomicInteger idCounter = new AtomicInteger();
 	
-	public List<Accessory> getAccessories()
-	{
-		return accessories;
+	@GetMapping
+	public List<Accessory> getAccessories() {
+		
+		return new LinkedList<Accessory>(accessories.values());
 	}
-
-	public void addProductToList(Accessory accessory) {
-		accessories.add(accessory);
-	}
-
-	public void removeProductFromList(Accessory accessory) {
-		accessories.remove(accessory);
-	}
-
-	public List<Accessory> getProductsByProducer(String producer) {
-		List<Accessory> resultArray = new ArrayList<>();
-
-		for (int i = 0; i < accessories.size(); i++) {
-			if (accessories.get(i).getProducer() == producer) {
-				resultArray.add(accessories.get(i));
-			}
+	
+	@GetMapping(path = "/{id}")
+	public Accessory getAccessoryById(final @PathVariable("id") Integer id) {
+		if(accessories.containsKey(id))	{
+			return accessories.get(id);
 		}
-
-		return resultArray;
-	}
-
-	public void printList(List<Accessory> list) {
-		for (int i = 0; i < list.size(); i++) {
-			System.out.println(list.get(i).getName());
+		else {
+			return null;
 		}
-
-		System.out.println();
 	}
 
+	@PostMapping
+	public Accessory addProductToList(final @RequestBody Accessory accessory) {
+		accessory.setId(idCounter.incrementAndGet());
+		accessories.put(accessory.getId(), accessory);
+		return accessory;
+	}
+
+	@DeleteMapping(path = "/{id}")
+	public ResponseEntity<Accessory> removeProductFromList(@PathVariable("id") Integer id) {
+		HttpStatus status = accessories.remove(id) == null ? HttpStatus.NOT_FOUND : HttpStatus.OK;
+		return ResponseEntity.status(status).build();
+	}
+	
+	@PutMapping(path = "/{id}")
+	public ResponseEntity<Accessory> modifyElement(final @PathVariable("id") Integer id, @RequestBody Accessory accessory) {
+		
+		HttpStatus status;
+		Accessory oldOne = new Accessory();
+		
+		if(accessories.containsKey(id)) {
+			oldOne = accessories.get(id);
+			accessory.setId(id);
+			accessories.replace(id, accessory);
+			status = HttpStatus.OK;
+		}
+		else
+		{
+			status = HttpStatus.NOT_FOUND;
+		}
+		
+		return status == HttpStatus.OK ? (new ResponseEntity<Accessory>(oldOne, status)) : ResponseEntity.status(status).build();
+	}
 }
