@@ -1,0 +1,51 @@
+package ua.lviv.iot.spring.first.rest.bussiness;
+
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.stereotype.Service;
+
+import ua.lviv.iot.spring.first.rest.dataaccess.AccessoryRepository;
+import ua.lviv.iot.spring.first.rest.models.Accessory;
+
+import java.util.List;
+
+@Service
+public class AccessoryService {
+
+    @Autowired
+    private AccessoryRepository accessoryRepository;
+
+    public List<Accessory> getAccessories() {
+        return accessoryRepository.findAll();
+    }
+
+    public Accessory getAccessory(Integer id) {
+        if (accessoryRepository.existsById(id)) {
+            return accessoryRepository.findById(id).get();
+        } else {
+            return null;
+        }
+    }
+
+    public Accessory createAccessory(Accessory accessory) {
+        return accessoryRepository.save(accessory);
+    }
+
+    public boolean deleteAccessory(Integer id) {
+        if (accessoryRepository.existsById(id)) {
+            accessoryRepository.deleteById(id);
+            return true;
+        } else {
+            return false;
+        }
+    }
+
+    public Accessory updateAccessory(Integer id, Accessory accessory) {
+        if (accessoryRepository.existsById(id)) {
+            Accessory previousAccessory = accessoryRepository.findById(id).get();
+            accessoryRepository.save(accessory);
+            return previousAccessory;
+        } else {
+            return null;
+        }
+    }
+}
