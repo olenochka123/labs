@@ -1,66 +1,55 @@
 package ua.lviv.iot.spring.first.rest.controllers;
 
 import java.util.*;
-import java.util.concurrent.atomic.AtomicInteger;
 
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
+import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
+import ua.lviv.iot.spring.first.rest.bussiness.AccessoryService;
 import ua.lviv.iot.spring.first.rest.models.Accessory;
 
 @RequestMapping("/products")
 @RestController
-public class ProductManager {
-	public Map<Integer, Accessory> accessories = new HashMap<>();
-	private AtomicInteger idCounter = new AtomicInteger();
-	
-	@GetMapping
-	public List<Accessory> getAccessories() {
-		
-		return new LinkedList<Accessory>(accessories.values());
-	}
-	
-	@GetMapping(path = "/{id}")
-	public Accessory getAccessoryById(final @PathVariable("id") Integer id) {
-		if(accessories.containsKey(id))	{
-			return accessories.get(id);
-		}
-		else {
-			return null;
-		}
-	}
+public class AccessoryController {
 
-	@PostMapping
-	public Accessory addProductToList(final @RequestBody Accessory accessory) {
-		accessory.setId(idCounter.incrementAndGet());
-		accessories.put(accessory.getId(), accessory);
-		return accessory;
-	}
+    @Autowired
+    private AccessoryService accessoryService;
 
-	@DeleteMapping(path = "/{id}")
-	public ResponseEntity<Accessory> removeProductFromList(@PathVariable("id") Integer id) {
-		HttpStatus status = accessories.remove(id) == null ? HttpStatus.NOT_FOUND : HttpStatus.OK;
-		return ResponseEntity.status(status).build();
-	}
-	
-	@PutMapping(path = "/{id}")
-	public ResponseEntity<Accessory> modifyElement(final @PathVariable("id") Integer id, @RequestBody Accessory accessory) {
-		
-		HttpStatus status;
-		Accessory oldOne = new Accessory();
-		
-		if(accessories.containsKey(id)) {
-			oldOne = accessories.get(id);
-			accessory.setId(id);
-			accessories.replace(id, accessory);
-			status = HttpStatus.OK;
-		}
-		else
-		{
-			status = HttpStatus.NOT_FOUND;
-		}
-		
-		return status == HttpStatus.OK ? (new ResponseEntity<Accessory>(oldOne, status)) : ResponseEntity.status(status).build();
-	}
+    @GetMapping
+    public final List<Accessory> getAccessories() {
+        return accessoryService.getAccessories();
+    }
+
+    @GetMapping(path = "/{id}")
+    public ResponseEntity<Accessory> getAccessory(final @PathVariable("id") Integer id) {
+        Accessory accessoryNow;
+        return (accessoryNow = accessoryService.getAccessory(id)) == null
+                ? new ResponseEntity<>(HttpStatus.NOT_FOUND)
+                : new ResponseEntity<>(accessoryNow, HttpStatus.OK);
+    }
+
+    @PostMapping(produces = {MediaType.APPLICATION_JSON_VALUE})
+    public final Accessory createAccessory(final @RequestBody Accessory accessory) {
+        return accessoryService.createAccessory(accessory);
+    }
+
+    @DeleteMapping(path = "/{id}")
+    public final ResponseEntity<Accessory> deleteAccessory(final @PathVariable("id") Integer id) {
+        HttpStatus status = accessoryService.deleteAccessory(id) ? HttpStatus.OK :
+                HttpStatus.NOT_FOUND;
+        return new ResponseEntity<>(status);
+    }
+
+    @PutMapping(path = "/{id}")
+    public final ResponseEntity<Accessory> updateAccessory(final @PathVariable("id") Integer id,
+                                                           final @RequestBody Accessory accessory) {
+        accessory.setId(id);
+        Accessory previousAccessory;
+        return (previousAccessory = accessoryService.updateAccessory(id, accessory)) == null
+                ? new ResponseEntity<>(HttpStatus.NOT_FOUND)
+                : new ResponseEntity<>(previousAccessory, HttpStatus.OK);
+    }
 }
